@@ -22,7 +22,6 @@ def parse_args():
     parser.add_argument('-c', '--connection' , help='Database connection string url, default: ' + defaultConnString, required = False, default = defaultConnString)
     parser.add_argument('-d', '--db' , help='Database name', required = True)
     parser.add_argument('-o', '--output-file', help='Output CSV file', required = True, default = None)
-    parser.add_argument('-oi', '--output-file-ids', help='Output CSV file for ids', required = True, default = None)
     args = vars(parser.parse_args())
     return args
 
@@ -31,9 +30,8 @@ connectionString = args['connection']
 databaseName = args['db']
 out = open(args['output_file'], "w")
 
-outIds = open(args['output_file_ids'], "w")
-
-out.write("applicationId;created;submitted;verdictGiven\n")
+# out.write("applicationId;created;submitted;verdictGiven\n")
+out.write("applicationId;operationId;createdDate;submittedDate;verdictGivenDate;canceledDate;isCanceled\n")
 
 client = MongoClient(connectionString)
 db = client[databaseName]
@@ -43,6 +41,10 @@ apps = {}
 i = 0
 for application in applications.find():
     appId = application["_id"]
+
+    if application["infoRequest"]:
+        continue
+
     print appId
     if not appId in appIds.keys():
         appIds[appId] = str(appIdSeq)
@@ -59,13 +61,14 @@ for application in applications.find():
 
     created = application["created"]
     if created is not None:
-        created = str(created)
+        created = str(datetime.datetime.fromtimestamp(created/1000.0))
     else:
         created = ""
 
-    submitted = str(application["submitted"])
+    submitted = application["submitted"]
     if submitted is not None:
-        submitted = str(submitted)
+        print submitted
+        submitted = str(datetime.datetime.fromtimestamp(int(submitted)/1000.0))
     else:
         submitted = ""
 
@@ -82,9 +85,10 @@ for application in applications.find():
 #                print paatos["paivamaarat"]
                 if "anto" in paatos["paivamaarat"].keys():
                     pvm = paatos["paivamaarat"]["anto"]
- #                   print pvm
-                    if verdictGiven == "":
-                        verdictGiven = str(pvm)
+
+#                    print pvm
+                    if pvm is not None and verdictGiven == "":
+                        verdictGiven = str(datetime.datetime.fromtimestamp(pvm/1000.0))
 
 #    print "verdictGiven:" + str(verdictGiven)
 
@@ -93,8 +97,26 @@ for application in applications.find():
     else:
         verdictGiven = ""
 
+    canceled = None
+    if "canceled" in application.keys():
+        canceled = application["canceled"]
 
-    row = appId + ";" + created + ";" + submitted + ";" + verdictGiven + "\n"
+    if canceled is not None:
+        print submitted
+        canceled = str(datetime.datetime.fromtimestamp(int(canceled)/1000.0))
+    else:
+        canceled = ""
+    isCanceled = "false"
+    if canceled != "":
+        isCanceled = "true"
+
+    try:
+        operationId = application["primaryOperation"]["name"]
+    except:
+        operationId = ""
+
+    # row = appId + ";" + created + ";" + submitted + ";" + verdictGiven + "\n"
+    row = appId + ";" + operationId + ";" + created + ";" + submitted + ";" + verdictGiven + ";" + canceled + ";" + isCanceled + "\n"
     row = row.encode('utf-8')
     print row
     out.write(row)
