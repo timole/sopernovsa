@@ -73,13 +73,16 @@ for application in applications.find():
 
     verdictGiven = ""
     verdicts = application["verdicts"]
-    for verdict in verdicts:
-        for paatos in verdict["paatokset"]:
-            if "paivamaarat" in paatos.keys():
-                if "anto" in paatos["paivamaarat"].keys():
-                    pvm = paatos["paivamaarat"]["anto"]
-                    if pvm is not None and verdictGiven == "":
-                        verdictGiven = str(datetime.datetime.fromtimestamp(pvm/1000.0))
+    if len(verdicts) > 0:
+        for verdict in verdicts:
+            for paatos in verdict["paatokset"]:
+                if "paivamaarat" in paatos.keys():
+                    if "anto" in paatos["paivamaarat"].keys():
+                        pvm = paatos["paivamaarat"]["anto"]
+                        if pvm is not None and verdictGiven == "":
+                            verdictGiven = str(datetime.datetime.fromtimestamp(pvm/1000.0))
+        if verdictGiven == "" and "timestamp" in verdicts[0].keys() and verdicts[0]["timestamp"] is not None:
+            verdictGiven = str(datetime.datetime.fromtimestamp(int(verdicts[0]["timestamp"])/1000.0))
 
     if verdictGiven is not None:
         verdictGiven = str(verdictGiven)
