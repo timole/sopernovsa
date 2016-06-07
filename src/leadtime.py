@@ -29,6 +29,12 @@ def report_error(errorId):
     sys.stdout.write(errorId)
     sys.stdout.flush()
 
+def parse_date(dateString):
+    if dateString is None or dateString == 0:
+        return ""
+    else:
+        return str(datetime.datetime.fromtimestamp(dateString/1000.0))
+
 args = parse_args()
 connectionString = args['connection']
 databaseName = args['db']
@@ -59,17 +65,9 @@ for application in applications.find():
 
     comments = application["comments"]
 
-    created = application["created"]
-    if created is not None:
-        created = str(datetime.datetime.fromtimestamp(created/1000.0))
-    else:
-        created = ""
+    created = parse_date(application["created"])
 
-    submitted = application["submitted"]
-    if submitted is not None:
-        submitted = str(datetime.datetime.fromtimestamp(int(submitted)/1000.0))
-    else:
-        submitted = ""
+    submitted = parse_date(application["submitted"])
 
     verdictGiven = ""
     verdicts = application["verdicts"]
@@ -80,9 +78,9 @@ for application in applications.find():
                     if "anto" in paatos["paivamaarat"].keys():
                         pvm = paatos["paivamaarat"]["anto"]
                         if pvm is not None and verdictGiven == "":
-                            verdictGiven = str(datetime.datetime.fromtimestamp(pvm/1000.0))
+                            verdictGiven = parse_date(pvm)
         if verdictGiven == "" and "timestamp" in verdicts[0].keys() and verdicts[0]["timestamp"] is not None:
-            verdictGiven = str(datetime.datetime.fromtimestamp(int(verdicts[0]["timestamp"])/1000.0))
+            verdictGiven = parse_date(verdicts[0]["timestamp"])
 
     if verdictGiven is not None:
         verdictGiven = str(verdictGiven)
@@ -94,7 +92,7 @@ for application in applications.find():
         canceled = application["canceled"]
 
     if canceled is not None:
-        canceled = str(datetime.datetime.fromtimestamp(int(canceled)/1000.0))
+        canceled = parse_date(canceled)
     else:
         canceled = ""
 
