@@ -25,13 +25,17 @@ def parse_args():
     args = vars(parser.parse_args())
     return args
 
+def report_error(errorId):
+    sys.stdout.write(errorId)
+    sys.stdout.flush()
+
 args = parse_args()
 connectionString = args['connection']
 databaseName = args['db']
 out = open(args['output_file'], "w")
 
 # out.write("applicationId;created;submitted;verdictGiven\n")
-out.write("applicationId;operationId;createdDate;submittedDate;verdictGivenDate;canceledDate;isCanceled\n")
+out.write("applicationId;municipalityId;state;operationId;operationId2;operationId3;allOperations;createdDate;submittedDate;verdictGivenDate;canceledDate;isCanceled\n")
 
 client = MongoClient(connectionString)
 db = client[databaseName]
@@ -39,13 +43,13 @@ db = client[databaseName]
 applications = db.applications
 apps = {}
 i = 0
+
 for application in applications.find():
     appId = application["_id"]
 
     if application["infoRequest"]:
         continue
 
-    print appId
     if not appId in appIds.keys():
         appIds[appId] = str(appIdSeq)
         appIdSeq = appIdSeq + 1
@@ -55,10 +59,6 @@ for application in applications.find():
 
     comments = application["comments"]
 
-#    try:
-#    print "created:" + str(application["created"])
-#    print "submitted:" + str(application["submitted"])
-
     created = application["created"]
     if created is not None:
         created = str(datetime.datetime.fromtimestamp(created/1000.0))
@@ -67,7 +67,6 @@ for application in applications.find():
 
     submitted = application["submitted"]
     if submitted is not None:
-        print submitted
         submitted = str(datetime.datetime.fromtimestamp(int(submitted)/1000.0))
     else:
         submitted = ""
@@ -75,22 +74,12 @@ for application in applications.find():
     verdictGiven = ""
     verdicts = application["verdicts"]
     for verdict in verdicts:
-#        print "verdict:"
-#        print verdict
         for paatos in verdict["paatokset"]:
-#            print "paatos:"
-#            print paatos
             if "paivamaarat" in paatos.keys():
-#                print "paivamaarat"
-#                print paatos["paivamaarat"]
                 if "anto" in paatos["paivamaarat"].keys():
                     pvm = paatos["paivamaarat"]["anto"]
-
-#                    print pvm
                     if pvm is not None and verdictGiven == "":
                         verdictGiven = str(datetime.datetime.fromtimestamp(pvm/1000.0))
-
-#    print "verdictGiven:" + str(verdictGiven)
 
     if verdictGiven is not None:
         verdictGiven = str(verdictGiven)
@@ -102,10 +91,10 @@ for application in applications.find():
         canceled = application["canceled"]
 
     if canceled is not None:
-        print submitted
         canceled = str(datetime.datetime.fromtimestamp(int(canceled)/1000.0))
     else:
         canceled = ""
+
     isCanceled = "false"
     if canceled != "":
         isCanceled = "true"
@@ -114,17 +103,48 @@ for application in applications.find():
         operationId = application["primaryOperation"]["name"]
     except:
         operationId = ""
+        report_error('o')
+
+    operationId2 = ""
+    operationId3 = ""
+    allOperations = operationId
+
+    try:
+        if "secondaryOperations" in application.keys() and len(application["secondaryOperations"]) > 0:
+            operationId2 = application["secondaryOperations"][0]["name"]
+        if "secondaryOperations" in application.keys() and len(application["secondaryOperations"]) > 1:
+            operationId3 = application["secondaryOperations"][1]["name"]
+
+        for secondaryOperation in application["secondaryOperations"]:
+            allOperations = allOperations + ","
+            allOperations = allOperations + str(secondaryOperation["name"])
+    except:
+        report_error('2')
+
+    try:
+        state = application["state"]
+    except:
+        state = ""
+        report_error('s')
+
+    try:
+        municipalityId = application["municipality"]
+    except:
+        municipalityId = ""
+        report_error('m')
 
     # row = appId + ";" + created + ";" + submitted + ";" + verdictGiven + "\n"
-    row = appId + ";" + operationId + ";" + created + ";" + submitted + ";" + verdictGiven + ";" + canceled + ";" + isCanceled + "\n"
+
+    row = appId + ";" + municipalityId + ";" + state + ";" + operationId + ";" + operationId2 + ";" + operationId3 + ";" + allOperations + ";"+ created + ";" + submitted + ";" + verdictGiven + ";" + canceled + ";" + isCanceled + "\n"
     row = row.encode('utf-8')
-    print row
+#    print row
     out.write(row)
 
     if i % 1000 == 0:
         sys.stdout.write('.')
         sys.stdout.flush()
-        i = i + 1
+
+    i = i + 1
 #    except:
 #        sys.stdout.write('e')
 #        sys.stdout.flush()
