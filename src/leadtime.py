@@ -41,7 +41,7 @@ databaseName = args['db']
 out = open(args['output_file'], "w")
 
 # out.write("applicationId;created;submitted;verdictGiven\n")
-out.write("applicationId;municipalityId;state;operationId;operationId2;operationId3;allOperations;createdDate;submittedDate;verdictGivenDate;canceledDate;isCanceled\n")
+out.write("applicationId;municipalityId;permitType;state;operationId;operationId2;operationId3;allOperations;createdDate;submittedDate;verdictGivenDate;canceledDate;isCanceled\n")
 
 client = MongoClient(connectionString)
 db = client[databaseName]
@@ -62,6 +62,8 @@ for application in applications.find():
         pubAppId = appIds[appId]
 
     municipalityId = application["municipality"]
+
+    permitType = application["permitType"]
 
     comments = application["comments"]
 
@@ -136,7 +138,7 @@ for application in applications.find():
 
     # row = appId + ";" + created + ";" + submitted + ";" + verdictGiven + "\n"
 
-    row = appId + ";" + municipalityId + ";" + state + ";" + operationId + ";" + operationId2 + ";" + operationId3 + ";" + allOperations + ";"+ created + ";" + submitted + ";" + verdictGiven + ";" + canceled + ";" + isCanceled + "\n"
+    row = appId + ";" + municipalityId + ";" + permitType + ";" + state + ";" + operationId + ";" + operationId2 + ";" + operationId3 + ";" + allOperations + ";"+ created + ";" + submitted + ";" + verdictGiven + ";" + canceled + ";" + isCanceled + "\n"
     row = row.encode('utf-8')
 #    print row
     out.write(row)
