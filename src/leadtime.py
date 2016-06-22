@@ -50,7 +50,11 @@ applications = db.applications
 apps = {}
 i = 0
 
-for application in applications.find():
+applications = applications.find()
+
+print "Found {} applications".format(applications.count())
+
+for application in applications:
     appId = application["_id"]
 
     if application["infoRequest"]:
