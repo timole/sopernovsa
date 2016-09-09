@@ -75,6 +75,11 @@ for application in applications:
 
     submitted = parse_date(application["submitted"])
 
+    if "canceled" in application.keys():
+        canceled = parse_date(application["canceled"])
+    else:
+        canceled = ""
+
     if "sent" in application.keys():
         sent = parse_date(application["sent"])
     else:
